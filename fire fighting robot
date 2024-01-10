@@ -1,0 +1,169 @@
+#include <Servo.h>
+Servo myservo;
+// Defined Motors Pins in Arduino
+#define motor1A  4  // Motor 1, direction A
+#define motor1B  3  // Motor 1, direction B
+#define motor2A  5  // Motor 2, direction A
+#define motor2B  6  // Motor 2, direction B
+#define echo 13
+#define trigger 7
+#define servo 2 
+#define flameRight A2
+#define flameLeft A0
+#define flameCenter A1
+#define pump 9
+unsigned long prev = 0;
+int state = 0;
+int fire = 1100;
+void setup() {
+    Serial.begin(9600);
+    pinMode(motor1A, OUTPUT);
+    pinMode(motor1B, OUTPUT);
+    pinMode(motor2A, OUTPUT);
+    pinMode(motor2B, OUTPUT);
+    pinMode(trigger, OUTPUT);
+    pinMode(echo, INPUT);
+    myservo.attach(servo);
+    myservo.write(90);
+    pinMode(flameRight, INPUT);
+    pinMode(flameLeft, INPUT);
+    pinMode(flameCenter, INPUT);
+    pinMode(pump, OUTPUT);
+    digitalWrite(pump, HIGH);
+}
+void loop() {
+int right1 = analogRead(flameRight);
+int left1 = analogRead(flameLeft);
+int center = analogRead(flameCenter);
+    Serial.print("Right: ");
+    Serial.print(right1);
+    Serial.print(" | Left: ");
+    Serial.print(left1);
+    Serial.print(" | Center: ");
+    Serial.println(center);
+if( left1<fire || right1<fire || center<fire)
+{
+  stop();
+  delay(500);
+  if(center < fire)
+  {
+    while(center < fire)
+    {
+      center = analogRead(flameCenter);
+      digitalWrite(pump,LOW);
+      Serial.print(" | Center: ");
+      Serial.println(center);
+    }
+    digitalWrite(pump,HIGH);
+  }
+  else
+  {
+    if(left1 < fire)
+    {
+     moveleft();
+     delay(500);
+     movefront();
+    }
+    else if (right1 < fire)
+    {
+     moveright();
+     delay(500);
+     movefront();
+    }
+  }
+}
+else
+ {
+    movefront();
+    int dis = distancesonic();
+    Serial.print("dis ");
+    Serial.println(dis);
+    if (dis < 20 && dis > 0) 
+    {
+        stop();
+        delay(500);
+        moveback();
+        delay(500);
+        stop();
+        myservo.write(0);
+        delay(1000);
+        float left = distancesonic();
+        delay(500);
+        myservo.write(180);
+        delay(1000);
+        float right = distancesonic();
+        delay(500);
+        myservo.write(90);
+        delay(1000);
+        if (right > left) 
+        {
+            moveright();
+            delay(650);
+            stop();
+            delay(1000);
+            movefront();
+        }
+        else 
+        {
+            moveleft();
+            delay(650);
+            stop();
+            delay(1000);
+            movefront();
+        }
+    }
+  }
+}
+int distancesonic() {
+    digitalWrite(trigger, LOW);
+    delayMicroseconds(2);
+    digitalWrite(trigger, HIGH);
+    delayMicroseconds(10);
+    digitalWrite(trigger, LOW);
+    long duration = pulseIn(echo, HIGH);
+    if (duration == 0)
+    return (1000);
+    delay(100);
+    Serial.println (duration);
+    float result = (duration * 0.0343) / 2.0;
+    if (result == 0)
+        return(1200);
+    return (result);
+}
+void movefront()
+{
+    digitalWrite(motor1A, HIGH);
+    digitalWrite(motor1B, LOW);
+    digitalWrite(motor2A, HIGH);
+    digitalWrite(motor2B, LOW);
+}
+
+void moveback()
+{
+    digitalWrite(motor1A, LOW);
+    digitalWrite(motor1B, HIGH);
+    digitalWrite(motor2A, LOW);
+    digitalWrite(motor2B, HIGH);
+}
+void moveright()
+{
+    digitalWrite(motor1A, HIGH);
+    digitalWrite(motor1B, LOW);
+    digitalWrite(motor2A, LOW);
+    digitalWrite(motor2B, HIGH);
+}
+
+void moveleft()
+{
+    digitalWrite(motor1A, LOW);
+    digitalWrite(motor1B, HIGH);
+    digitalWrite(motor2A, HIGH);
+    digitalWrite(motor2B, LOW);
+}
+void stop() 
+{
+    digitalWrite(motor1A, LOW);
+    digitalWrite(motor1B, LOW);
+    digitalWrite(motor2A, LOW);
+    digitalWrite(motor2B, LOW);
+}
